@@ -12,11 +12,25 @@ const tokenAddress = '0x68B1D87F95878fE05B998F19b66F4baba5De1aed';
 
 function App() {
   // store greeting in local state
-  const [name, setNameValue, transferCalldata, proposalDescription] = useState()
+  const [name, setNameValue, proposals] = useState()
 
   // request access to the user's MetaMask account
   async function requestAccount() {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
+  }
+
+  // call the smart contract, read current proposals
+  async function fetchProposals() {
+    if (typeof window.ethereum !== 'undefined') {
+      const provider = new ethers.providers.Web3Provider(window.ethereum)
+      const contract = new ethers.Contract(governorWOTAddress, GovernorWOTimelock.abi, provider)
+      try {
+        const data = await contract.greet()
+        console.log('data: ', data)
+      } catch (err) {
+        console.log("Error: ", err)
+      }
+    }    
   }
 
   // call the governor, create proposal
@@ -33,14 +47,14 @@ function App() {
 
       console.log('proposal name: ', name)
       try {
-        const data = await governor.propose(
+        const proposalId = await governor.propose(
           [tokenAddress],
           [0],
           [transferCalldata],
           name,
         );
-        console.log('data: ', data)
-        await data.wait()
+        // await proposalId.wait()
+        console.log('proposalId: ', proposalId.toString())
       } catch (err) {
         console.log("Error: ", err)
       }
@@ -77,6 +91,8 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
+        <button onClick={fetchProposals}>Fetch Proposals</button>
+        {proposals}
         <button onClick={createProposal}>Create Proposal</button>
         <button onClick={executeProposal}>Execute Proposal</button>
         <input onChange={e => setNameValue(e.target.value)} placeholder="Set proposal description" />
